@@ -39,6 +39,7 @@ class Task(db.Model):
 
 class MainHandler(webapp2.RequestHandler):
   def get(self):
+    user = users.get_current_user()
     context = self.request.get('context') 
     if context:
       context = int(context)
@@ -54,7 +55,9 @@ class MainHandler(webapp2.RequestHandler):
     template_values = {
       'task': task,
       'contexts': contexts,
-      'context': context
+      'context': context,
+      'user': user,
+      'logout_url': users.create_logout_url('/'),
     }
     path = os.path.join(os.path.dirname(__file__), 'index.html')
     self.response.out.write(template.render(path, template_values))
@@ -100,6 +103,3 @@ app = webapp2.WSGIApplication([
     ('/create_context', CreateContextHandler),
 ], debug=True)
 
-Context(name='work').put()
-Context(name='shopping').put()
-Context(name='home').put()
