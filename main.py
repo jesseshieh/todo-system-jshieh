@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import logging
 import cgi
 import datetime
 import urllib
@@ -40,16 +41,14 @@ class Task(db.Model):
 class MainHandler(webapp2.RequestHandler):
   def get(self):
     user = users.get_current_user()
-    context = self.request.get('context') 
-    if context:
+    context = self.request.get('context') or self.request.cookies.get('context')
+    if context and context != 'None':
       context = int(context)
       context = Context.get_by_id(context)
     else:
       context = None
 
-    query = Task.all().filter('complete =', False).order('creation_time')
-    if context:
-      query.filter('context = ', context)
+    query = Task.all().filter('complete =', False).order('creation_time').filter('context = ', context)
     task = query.get()
     contexts = Context.all()
     template_values = {
@@ -60,6 +59,10 @@ class MainHandler(webapp2.RequestHandler):
       'logout_url': users.create_logout_url('/'),
     }
     path = os.path.join(os.path.dirname(__file__), 'index.html')
+    if context:
+      self.response.headers.add_header('Set-Cookie', 'context=%d;' % context.key().id())
+    else:
+      self.response.headers.add_header('Set-Cookie', 'context=None;')
     self.response.out.write(template.render(path, template_values))
   
   def post(self):
