@@ -1,0 +1,42 @@
+<h1>CREATE NEW TASK</h1>
+<form method='POST' action='/'>
+  <textarea name='name' rows=5 cols=50></textarea>
+  <input type='submit'/>
+</form>
+
+<h1>CURRENT CONTEXT</h1>
+<div class='current context'>
+  {% if context %}
+    {{ context.name }}
+  {% else %}
+    NO CONTEXT
+  {% endif %}
+</div>
+<div>
+  <a href='/'>CHANGE TO NO CONTEXT</a>
+</div>
+{% for context in contexts %}
+<div>
+  <a href='/?context={{ context.key.id }}'>CHANGE TO {{ context.name }} CONTEXT</a>
+</div>
+{% endfor %}
+
+{% if task %}
+<h1>CURRENT TASK</h1>
+<div >
+  {{ task.name }}
+</div>
+<div>
+  <a href='/complete?task={{ task.key.id }}'>COMPLETE</a>
+</div>
+<div>
+  <a target='_blank' href='http://www.google.com/calendar/event?action=TEMPLATE&text={{ task.name }}&details={{ task.key.id }}'>MOVE TO CALENDAR</a>
+</div>
+{% for context in contexts %}
+<div>
+  <a href='/move?task={{ task.key.id }}&context={{ context.key.id }}'>MOVE TO {{ context.name }}</a>
+</div>
+{% endfor %}
+{% else %}
+<h1>NOTHING TO DO!</h2>
+{% endif %}
