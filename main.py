@@ -19,6 +19,9 @@ import cgi
 import datetime
 import urllib
 import webapp2
+from google.appengine.ext import webapp
+from google.appengine.ext.webapp.util import run_wsgi_app
+
 
 from google.appengine.ext import db
 from google.appengine.api import users
@@ -51,6 +54,7 @@ class MainHandler(webapp2.RequestHandler):
 	
   @decorator.oauth_required
   def get(self):
+    logging.error('get')
     user = users.get_current_user()
     context = self.request.get('context') or self.request.cookies.get('context')
     if context and context != 'None':
@@ -64,7 +68,9 @@ class MainHandler(webapp2.RequestHandler):
     contexts = Context.all()
 
     service = build('tasks', 'v1', http=decorator.http())
-    tasks = service.tasks().list(tasklist='@default').execute()
+    result = service.tasks().list(tasklist='@default').execute()
+    logging.error(result)
+    tasks = result.get('items', [])
 
     template_values = {
       'task': task,
@@ -120,5 +126,6 @@ app = webapp2.WSGIApplication([
     ('/complete', CompleteHandler),
     ('/move', MoveHandler),
     ('/create_context', CreateContextHandler),
+    (decorator.callback_path, decorator.callback_handler()),
 ], debug=True)
 
