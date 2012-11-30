@@ -25,6 +25,15 @@ from google.appengine.api import users
 import os
 from google.appengine.ext.webapp import template
 
+from apiclient.discovery import build
+import httplib2
+from oauth2client.appengine import OAuth2Decorator
+import settings
+
+decorator = OAuth2Decorator(client_id=settings.CLIENT_ID,
+                            client_secret=settings.CLIENT_SECRET,
+                            scope=settings.SCOPE,
+                            user_agent='todo-system-jshieh')
 
 class Context(db.Model):
   creation_time = db.DateTimeProperty(auto_now_add=True)
@@ -39,6 +48,8 @@ class Task(db.Model):
   complete = db.BooleanProperty(default=False)
 
 class MainHandler(webapp2.RequestHandler):
+	
+  @decorator.oauth_required
   def get(self):
     user = users.get_current_user()
     context = self.request.get('context') or self.request.cookies.get('context')
@@ -51,8 +62,13 @@ class MainHandler(webapp2.RequestHandler):
     query = Task.all().filter('complete =', False).order('creation_time').filter('context = ', context)
     task = query.get()
     contexts = Context.all()
+
+    service = build('tasks', 'v1', http=decorator.http())
+    tasks = service.tasks().list(tasklist='@default').execute()
+
     template_values = {
       'task': task,
+      'google_tasks': tasks,
       'contexts': contexts,
       'context': context,
       'user': user,

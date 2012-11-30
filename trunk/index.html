@@ -22,6 +22,10 @@ h2 {
   font-size:18px;
 }
 </style>
+
+{% for task in google_tasks['items'] %}
+  {{ task['title] }}
+{% endfor %}
 <a href='{{ logout_url }}'>logout</a> of {{ user.nickname }}
 <form method='POST' action='/'>
   <textarea id='name' name='name' rows=5 cols=50 placeholder='Create new task'></textarea>
