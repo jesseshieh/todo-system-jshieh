@@ -22,6 +22,8 @@ import webapp2
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
+import time
+from rfc3339 import rfc3339
 
 from google.appengine.ext import db
 from google.appengine.api import users
@@ -54,37 +56,27 @@ class MainHandler(webapp2.RequestHandler):
 	
   @decorator.oauth_required
   def get(self):
-    logging.error('get')
-    user = users.get_current_user()
-    context = self.request.get('context') or self.request.cookies.get('context')
-    if context and context != 'None':
-      context = int(context)
-      context = Context.get_by_id(context)
-    else:
-      context = None
-
-    query = Task.all().filter('complete =', False).order('creation_time').filter('context = ', context)
-    task = query.get()
-    contexts = Context.all()
-
     service = build('tasks', 'v1', http=decorator.http())
-    result = service.tasks().list(tasklist='@default').execute()
-    logging.error(result)
+
+    result = service.tasklists().list().execute()
+    contexts = result.get('items', [])
+
+    context_param = self.request.get('context') or self.request.cookies.get('context') or '@default'
+    context = service.tasklists().get(tasklist=context_param).execute()
+
+    result = service.tasks().list(tasklist=context['id'], showCompleted=False, showDeleted=False, showHidden=False).execute()
     tasks = result.get('items', [])
+    task = {}
+    if tasks:
+      task = tasks[0]
 
     template_values = {
       'task': task,
-      'google_tasks': tasks,
       'contexts': contexts,
       'context': context,
-      'user': user,
-      'logout_url': users.create_logout_url('/'),
     }
     path = os.path.join(os.path.dirname(__file__), 'index.html')
-    if context:
-      self.response.headers.add_header('Set-Cookie', 'context=%d;' % context.key().id())
-    else:
-      self.response.headers.add_header('Set-Cookie', 'context=None;')
+    self.response.headers.add_header('Set-Cookie', str('context=%s;' % context['id']))
     self.response.out.write(template.render(path, template_values))
   
   def post(self):
@@ -94,38 +86,39 @@ class MainHandler(webapp2.RequestHandler):
     self.redirect('/')
 
 class CompleteHandler(webapp2.RequestHandler):
+  @decorator.oauth_required
   def get(self):
+    service = build('tasks', 'v1', http=decorator.http())
     task = self.request.get('task')
-    task = int(task)
-    task = Task.get_by_id(task)
-    task.complete = True
-    task.put()
+    context = self.request.get('context')
+
+    service.tasks().delete(tasklist=context, task=task).execute()
+
     self.redirect('/')
 
 class MoveHandler(webapp2.RequestHandler):
+  @decorator.oauth_required
   def get(self):
+    service = build('tasks', 'v1', http=decorator.http())
     task = self.request.get('task')
     context = self.request.get('context')
-    task = int(task)
-    context = int(context)
-    task = Task.get_by_id(task)
-    context = Context.get_by_id(context)
-    task.context = context
-    task.put()
-    self.redirect('/')
+    destination_context = self.request.get('destination_context')
 
-class CreateContextHandler(webapp2.RequestHandler):
-  def get(self):
-    name = self.request.get('name')
-    context = Context(name=name)
-    context.put()
-    self.response.out.write('created context with name ' + name)
+    # copy it over
+    body = service.tasks().get(tasklist=context, task=task).execute()
+    service.tasks().insert(tasklist=destination_context, body={
+      'title': body['title'],
+    }).execute()
+
+    # complete it
+    service.tasks().delete(tasklist=context, task=task).execute()
+
+    self.redirect('/')
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/complete', CompleteHandler),
     ('/move', MoveHandler),
-    ('/create_context', CreateContextHandler),
     (decorator.callback_path, decorator.callback_handler()),
 ], debug=True)
 
