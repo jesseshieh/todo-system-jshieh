@@ -66,9 +66,11 @@ class MainHandler(webapp2.RequestHandler):
 
     result = service.tasks().list(tasklist=context['id'], showCompleted=False, showDeleted=False, showHidden=False).execute()
     tasks = result.get('items', [])
+    logging.error(tasks)
     task = {}
     if tasks:
-      task = tasks[0]
+      # tasks gets added to the front of the list.  grab the last one.
+      task = tasks[-1]
 
     template_values = {
       'task': task,
@@ -79,9 +81,12 @@ class MainHandler(webapp2.RequestHandler):
     self.response.headers.add_header('Set-Cookie', str('context=%s;' % context['id']))
     self.response.out.write(template.render(path, template_values))
   
+  @decorator.oauth_required
   def post(self):
+    service = build('tasks', 'v1', http=decorator.http())
     name = self.request.get("name")
-    service.tasks().insert(tasklist=destination_context, body={
+    context = self.request.get("context")
+    service.tasks().insert(tasklist=context, body={
       'title': name,
     }).execute()
     self.redirect('/')
