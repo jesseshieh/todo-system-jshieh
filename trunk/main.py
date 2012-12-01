@@ -81,8 +81,9 @@ class MainHandler(webapp2.RequestHandler):
   
   def post(self):
     name = self.request.get("name")
-    task = Task(name=name)
-    task.put()
+    service.tasks().insert(tasklist=destination_context, body={
+      'title': name,
+    }).execute()
     self.redirect('/')
 
 class CompleteHandler(webapp2.RequestHandler):
