@@ -1,81 +1,71 @@
 <style>
-h1 {
-  font-size:20px;
-  color:#aaa;
-}
-.current.task {
-  font-size:40px;
-  font-weight:bold;
-  margin:20px;
-}
-.context, .move {
-  display:inline;
-  margin:10px;
-}
-.complete {
-  margin:20px;
-}
-h2 {
-  margin:20px;
-  display:inline;
-  font-weight:normal;
-  font-size:18px;
-}
+    h1 {
+        font-size: 20px;
+        color: #aaa;
+    }
+
+    .current.task {
+        font-size: 40px;
+        font-weight: bold;
+        margin: 20px;
+    }
+
+    .context, .move {
+        display: inline;
+        margin: 10px;
+    }
+
+    .complete {
+        margin: 20px;
+    }
+
+    h2 {
+        margin: 20px;
+        display: inline;
+        font-weight: normal;
+        font-size: 18px;
+    }
 </style>
 
-{% for t in google_tasks %}
-  {{ t }}
-{% endfor %}
-
-<a href='{{ logout_url }}'>logout</a> of {{ user.nickname }}
 <form method='POST' action='/'>
-  <textarea id='name' name='name' rows=5 cols=50 placeholder='Create new task'></textarea>
-  <input type='submit'/>
+    <textarea id='name' name='name' rows=5 cols=50 placeholder='Create new task'></textarea>
+    <input type='submit'/>
 </form>
 
-<div class='context'>
-  {% if context %}
-  <a href='/?context=None'>NO CONTEXT</a>
-  {% else %}
-  NO CONTEXT
-  {% endif %}
+<div>
+    CURRENT CONTEXT: {{ context.title }}
 </div>
 {% for c in contexts %}
 <div class='context'>
-  {% if c.name == context.name %}
-  {{ c.name }}
-  {% else %}
-  <a href='/?context={{ c.key.id }}'>{{ c.name }}</a>
-  {% endif %}
+    <a href='/?context={{ c.id }}'>{{ c.title }}</a>
 </div>
 {% endfor %}
 
 {% if task %}
 <div class='current task'>
-  {{ task.name }}
+    {{ task.title }}
 </div>
 
 <div class='complete'>
-  <a href='/complete?task={{ task.key.id }}'>Complete Task</a>
+    <a href='/complete?task={{ task.id }}&context={{ context.id }}'>Complete Task</a>
 </div>
- 
+
 <h2>Move To:</h2>
 <div class='move'>
-  <a target='_blank' href='http://www.google.com/calendar/event?action=TEMPLATE&text={{ task.name }}&details={{ task.key.id }}'>Calendar</a>
+    <a target='_blank'
+       href='http://www.google.com/calendar/event?action=TEMPLATE&text={{ task.title }}&details={{ task.id }}'>Calendar</a>
 </div>
 {% for c in contexts %}
-{% if c.name != context.name %}
 <div class='move'>
-  <a href='/move?task={{ task.key.id }}&context={{ c.key.id }}'>{{ c.name }}</a>
+    <a href='/move?task={{ task.id }}&context={{ context.id }}&destination_context={{ c.id }}'>{{ c.title }}</a>
 </div>
-{% endif %}
 {% endfor %}
 {% else %}
 <div class='current task'>
-  NOTHING TO DO!
+    NOTHING TO DO!
 </div>
 {% endif %}
 
 <script>
-  document.getElementById('name').focus();
+    document.getElementById('name').focus();
 </script>
