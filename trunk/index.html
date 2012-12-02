@@ -1,30 +1,38 @@
 <style>
-    h1 {
-        font-size: 20px;
-        color: #aaa;
-    }
-
-    .current.task {
-        font-size: 40px;
-        font-weight: bold;
-        margin: 20px;
-    }
-
-    .context, .move {
+	ul {
+		padding:0;
+		margin:0;
+		display:inline;
+	}
+    .context {
         display: inline;
-        margin: 10px;
+        padding: 5px 10px;
+		list-style: none;
+		background-color: #aaa;
     }
+	.context a {
+		text-decoration: none;
+		color: white;
+	}
+	.context.current {
+		font-weight: bold;
+		background-color: #ccc;
+	}
+	.context.current a {
+		color: black;
+	}
 
-    .complete {
-        margin: 20px;
-    }
-
-    h2 {
-        margin: 20px;
-        display: inline;
-        font-weight: normal;
-        font-size: 18px;
-    }
+	.current.task {
+		font-size:40px;
+		padding:10px;
+		font-weight:bold;
+	}
+	
+	.complete, .title, .move {
+		display:inline;
+	}
+	
+	
 </style>
 
 <form method='POST' action='/'>
@@ -33,38 +41,39 @@
     <input type='submit'/>
 </form>
 
-<div>
-    CURRENT CONTEXT: {{ context.title }}
-</div>
+<ul class='contexts'>
 {% for c in contexts %}
-<div class='context'>
+<li class='context{% if c.title == context.title %} current{% endif %}'>
     <a href='/?context={{ c.id }}'>{{ c.title }}</a>
-</div>
+</li>
 {% endfor %}
+
+
+<div class='current task'>
+	{% if task %}
+    	{{ task.title }}
+	{% else %}
+    	NOTHING TO DO!
+	{% endif %}
+</div>
 
 {% if task %}
-<div class='current task'>
-    {{ task.title }}
-</div>
+	<div class='complete'>
+    	<a href='/complete?task={{ task.id }}&context={{ context.id }}'>Complete Task</a>
+	</div>
 
-<div class='complete'>
-    <a href='/complete?task={{ task.id }}&context={{ context.id }}'>Complete Task</a>
-</div>
-
-<h2>Move To:</h2>
-<div class='move'>
-    <a target='_blank'
-       href='http://www.google.com/calendar/event?action=TEMPLATE&text={{ task.title }}&details={{ task.id }}'>Calendar</a>
-</div>
-{% for c in contexts %}
-<div class='move'>
-    <a href='/move?task={{ task.id }}&context={{ context.id }}&destination_context={{ c.id }}'>{{ c.title }}</a>
-</div>
-{% endfor %}
-{% else %}
-<div class='current task'>
-    NOTHING TO DO!
-</div>
+	<div class='title'>or move to:</div>
+	<ul>
+	<li class='move'>
+    	<a target='_blank'
+       		href='http://www.google.com/calendar/event?action=TEMPLATE&text={{ task.title }}&details={{ task.id }}'>Calendar</a>
+	</li>
+	{% for c in contexts %}
+	<li class='move'>
+    	<a href='/move?task={{ task.id }}&context={{ context.id }}&destination_context={{ c.id }}'>{{ c.title }}</a>
+	</li>
+	{% endfor %}
+	</ul>
 {% endif %}
 
 <script>
